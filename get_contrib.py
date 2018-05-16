@@ -5,23 +5,22 @@ import sys
 import getpass
 
 from requests.auth import HTTPBasicAuth
-username = input("GitHub username:")
+print("Please enter your GitHub credentials for additional API calls.")
+username = input("GitHub username: ")
 password = getpass.getpass("GitHub password: ")
 GITHUB_AUTH = HTTPBasicAuth('alex-hancock', password)
 
-USER = input("Please enter the username you'd like to search for: ")
+def create_daylist(since_date,today_date):
+    today_obj = datetime.date(int(today_date[0:4]), int(today_date[5:7]), int(today_date[-2:]))
+    since_obj = datetime.date(int(since_date[0:4]), int(since_date[5:7]), int(since_date[-2:]))
+
+    delta = today_obj - since_obj
+    thing = [since_obj + datetime.timedelta(days=i) for i in range(delta.days+1)]
+    return [x.strftime("%Y-%m-%d") for x in thing]
 
 today_date = datetime.date.today().isoformat()
 since_date = str(int(today_date[0:4])-1) + today_date[4:]
 days_hash = {day: 0 for day in create_daylist(since_date, today_date)}
-
-#
-# Initialize URLs
-#
-GITHUB_URL = "https://api.github.com"
-REPOS_URL  = "/users/" + USER + "/repos?type=all"
-ORG_URL = "/users/" + USER + "/orgs"
-repo_url_list = []
 
 def add_repo(repo_dict):
     # dictionary checking done in retry section
@@ -63,25 +62,32 @@ def requests_with_retry(desired_url, dictionary_function):
             for request_dict in request_obj.json():
                 dictionary_function(request_dict)
 
-def create_daylist(since_date,today_date):
-    today_obj = datetime.date(int(today_date[0:4]), int(today_date[5:7]), int(today_date[-2:]))
-    since_obj = datetime.date(int(since_date[0:4]), int(since_date[5:7]), int(since_date[-2:]))
+GITHUB_URL = "https://api.github.com"
+USER = input("Please enter the username you'd like to search for: ")
+request_obj = requests.get(GITHUB_URL + "/users/" + USER)
+if request_obj.status_code != 200:
+    print("There was a problem finding that user!")
+    print("Returned: {}".format(request_obj.json()))
+    sys.exit(1)
 
-    delta = today_obj - since_obj
-    thing = [since_obj + datetime.timedelta(days=i) for i in range(delta.days+1)]
-    return [x.strftime("%Y-%m-%d") for x in thing]
+#
+# Initialize URLs
+#
+REPOS_URL  = "/users/" + USER + "/repos?type=all"
+ORG_URL = "/users/" + USER + "/orgs"
+repo_url_list = []
 
 #
 # User owned/member repo request
 #
-print("Checking repositories of which", USER, "is either an owner or member...")
+print("Locating repositories of which", USER, "is either an owner or member...")
 requests_with_retry(GITHUB_URL + REPOS_URL, add_repo)
 print("Done!")
 
 #
 # Organizations they belong to, list their repos
 #
-print("Checking repositories of", USER, "organizations...")
+print("Locating repositories of", USER, "organizations...")
 org_request = requests.get(GITHUB_URL + ORG_URL, auth=GITHUB_AUTH)
 for org_dict in org_request.json():
     requests_with_retry(org_dict["repos_url"], add_repo)
@@ -107,5 +113,5 @@ for repo_url in repo_url_list:
     requests_with_retry(repo_url + commit_suffix, commit_increment_days_hash)
 print("Done!")
 
-contribution_list = days_hash.values()
+contribution_list = list(days_hash.values())
 print(contribution_list)
