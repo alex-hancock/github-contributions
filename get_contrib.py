@@ -41,7 +41,23 @@ for repo_url in list_of_repo_urls:
     # get issues since last year with USER as creator with state=all
     # https://developer.github.com/v3/issues/?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc#list-issues
 
+    # by the API, pull requests SHOULD be integrated as issues, so we don't care about these
+
     # get commits since date with USER as author
     # https://developer.github.com/v3/repos/commits/#get-a-single-commit
 
-    # by the API, pull requests SHOULD be integrated as issues, so we don't care about these
+    '''
+    Ideas:
+
+    Probably have to single out issues/pull requests individually, I'm okay with that. 
+
+    With commits, I think it's best to extract "for commit in blank" and create a 
+    hash table with dates. 
+
+    (is there an easy way to create a hash table of all days with initialize value 
+    to zero, and then just increment? who knows...)
+ 
+    But yeah, collect commits, go through each and grab date to fill out
+
+    Good luck, kid.
+    '''
