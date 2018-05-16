@@ -3,15 +3,6 @@ import datetime
 import sys
 import getpass
 
-#
-# GitHub authentication for 
-#
-from requests.auth import HTTPBasicAuth
-print("Please enter your GitHub credentials for additional API calls.")
-username = input("GitHub username: ")
-password = getpass.getpass("GitHub password: ")
-GITHUB_AUTH = HTTPBasicAuth(username, password)
-
 def create_daylist(since_date,today_date):
     today_obj = datetime.date(int(today_date[0:4]), int(today_date[5:7]), int(today_date[-2:]))
     since_obj = datetime.date(int(since_date[0:4]), int(since_date[5:7]), int(since_date[-2:]))
@@ -20,9 +11,11 @@ def create_daylist(since_date,today_date):
     thing = [since_obj + datetime.timedelta(days=i) for i in range(delta.days+1)]
     return [x.strftime("%Y-%m-%d") for x in thing]
 
+
 def add_repo(repo_dict):
     # dictionary checking done in retry section
     repo_url_list.append(repo_dict["url"])
+
 
 def issue_increment_days_hash(issue_dict):
     issue_user = issue_dict["user"]["login"]
@@ -30,11 +23,13 @@ def issue_increment_days_hash(issue_dict):
     if created_date in days_hash and issue_user == USER:
         days_hash[created_date] += 1
 
+
 def commit_increment_days_hash(commit_dict):
     commit_user = commit_dict["author"]["login"]
     created_date = commit_dict["commit"]["author"]["date"][:10]
     if created_date in days_hash and commit_user == USER:
         days_hash[created_date] += 1
+
 
 #
 # Request for information, retry with page numbers to get additional information
@@ -63,6 +58,17 @@ def requests_with_retry(desired_url, dictionary_function):
             for request_dict in request_obj.json():
                 dictionary_function(request_dict)
 
+
+#
+# GitHub authentication for 
+#
+from requests.auth import HTTPBasicAuth
+print("Please enter your GitHub credentials for additional API calls.")
+username = input("GitHub username: ")
+password = getpass.getpass("GitHub password: ")
+GITHUB_AUTH = HTTPBasicAuth(username, password)
+
+
 #
 # Get GitHub credentials, username of searchee
 #
@@ -74,12 +80,14 @@ if request_obj.status_code != 200:
     print("Returned: {}".format(request_obj.json()))
     sys.exit(1)
 
+
 #
 # Intialize since_date to one year ago and days_hash appropriately
 #
 today_date = datetime.date.today().isoformat()
 since_date = str(int(today_date[0:4])-1) + today_date[4:]
 days_hash = {day: 0 for day in create_daylist(since_date, today_date)}
+
 
 #
 # Initialize URLs
@@ -88,12 +96,14 @@ REPOS_URL  = "/users/" + USER + "/repos?type=all"
 ORG_URL = "/users/" + USER + "/orgs"
 repo_url_list = []
 
+
 #
 # User owned/member repo request
 #
 print("\nLocating repositories of which", USER, "is either an owner or member...")
 requests_with_retry(GITHUB_URL + REPOS_URL, add_repo)
 print("Done!")
+
 
 #
 # Organizations they belong to, list their repos
@@ -103,6 +113,7 @@ org_request = requests.get(GITHUB_URL + ORG_URL, auth=GITHUB_AUTH)
 for org_dict in org_request.json():
     requests_with_retry(org_dict["repos_url"], add_repo)
 print("Done!")
+
 
 #
 # Collect issues
@@ -114,6 +125,7 @@ for repo_url in repo_url_list:
     requests_with_retry(repo_url + issue_suffix, issue_increment_days_hash)
     requests_with_retry(repo_url + commit_suffix, commit_increment_days_hash)
 print("Done!")
+
 
 contribution_list = list(days_hash.values())
 print(contribution_list)
