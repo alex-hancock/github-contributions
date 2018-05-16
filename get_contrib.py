@@ -1,4 +1,3 @@
-import grequests as async
 import requests
 import datetime
 import sys
@@ -64,7 +63,7 @@ def requests_with_retry(desired_url, dictionary_function):
 
 GITHUB_URL = "https://api.github.com"
 USER = input("Please enter the username you'd like to search for: ")
-request_obj = requests.get(GITHUB_URL + "/users/" + USER)
+request_obj = requests.get(GITHUB_URL + "/users/" + USER, auth=GITHUB_AUTH)
 if request_obj.status_code != 200:
     print("There was a problem finding that user!")
     print("Returned: {}".format(request_obj.json()))
